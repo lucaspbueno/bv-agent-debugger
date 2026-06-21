@@ -75,7 +75,7 @@ DEFAULT_OLLAMA_MODEL = "llama3.1"   # troque por "mistral", "qwen2.5", etc.
 # DEFAULTS
 # ============================================================
 
-DEFAULT_HOURS  = 24
+DEFAULT_HOURS  = 72
 LOG_LIMIT      = 2000
 VPN_TIMEOUT    = 8
 API_RETRIES    = 3
@@ -257,26 +257,46 @@ def _get(url, headers, params, label):
         try:
             r = requests.get(url, headers=headers, params=params, timeout=30)
 
-            # Erros de autenticação não têm retry — falham imediatamente com mensagem clara
             if r.status_code == 401:
                 print()
+                detail = (
+                    f"\n  URL:      {r.url}"
+                    f"\n  Status:   {r.status_code}"
+                    f"\n  Resposta: {r.text[:300] or '(vazia)'}"
+                )
                 if "grafana" in url.lower():
                     _fail(
-                        "[Grafana] Cookie de sessão expirado (401 Unauthorized).\n\n"
+                        f"[Grafana] Cookie de sessão expirado (401).{detail}\n\n"
                         "  Renove o GRAFANA_SESSION:\n"
-                        "    1. Abra o Grafana no browser\n"
-                        "    2. F12 → aba Network\n"
-                        "    3. Faça qualquer query no Explore\n"
-                        "    4. Clique em 'query_range' → Headers\n"
-                        "    5. Copie o valor após 'grafana_session='\n\n"
-                        "  Windows:  $env:GRAFANA_SESSION='novo_valor'\n"
+                        "    1. Abra o Grafana no browser → F12 → Network\n"
+                        "    2. Faça qualquer query no Explore\n"
+                        "    3. Clique em 'query_range' → Headers → copie 'grafana_session=...'\n\n"
+                        "  Windows:   $env:GRAFANA_SESSION='novo_valor'\n"
                         "  Mac/Linux: export GRAFANA_SESSION='novo_valor'"
                     )
                 else:
-                    _fail(f"[{label}] Autenticação recusada (401). Verifique a API Key.")
+                    _fail(
+                        f"[{label}] Autenticação recusada (401).{detail}\n\n"
+                        "  Verifique a API Key:\n"
+                        "  Windows:   $env:BV_API_KEY='jbt_...'\n"
+                        "  Mac/Linux: export BV_API_KEY='jbt_...'"
+                    )
 
             if r.status_code == 403:
-                _fail(f"[{label}] Sem permissão (403 Forbidden). Verifique o token/cookie.")
+                print()
+                _fail(
+                    f"[{label}] Sem permissão (403).\n"
+                    f"  URL:      {r.url}\n"
+                    f"  Resposta: {r.text[:300] or '(vazia)'}"
+                )
+
+            if not r.ok:
+                print()
+                _fail(
+                    f"[{label}] Erro HTTP {r.status_code}.\n"
+                    f"  URL:      {r.url}\n"
+                    f"  Resposta: {r.text[:300] or '(vazia)'}"
+                )
 
             r.raise_for_status()
             return r
@@ -297,7 +317,8 @@ def _get(url, headers, params, label):
                 time.sleep(API_RETRY_WAIT)
 
     _fail(
-        f"[{label}] {API_RETRIES} tentativas falharam: {last_err}\n"
+        f"[{label}] {API_RETRIES} tentativas falharam.\n"
+        f"  Último erro: {last_err}\n"
         "  Verifique a VPN — pode estar conectada mas sem roteamento."
     )
 
