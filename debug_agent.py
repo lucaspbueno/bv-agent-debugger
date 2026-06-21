@@ -7,22 +7,15 @@ Fluxo:  BVID -> customer_id -> conversation_id -> logs Loki -> análise (Ollama,
 INSTALAÇÃO (1 vez):
     1. Instale o Ollama:       https://ollama.com/download
     2. Baixe o modelo:         ollama pull llama3.1
-    3. Instale dependências:   pip install requests
-
-AUTENTICAÇÃO NO GRAFANA (escolha uma):
-    Opção A — Cookie de sessão (temporário):
-        export GRAFANA_SESSION="01f93a5c122c13dd8b3b063f62d224da"
-        Renovar: Grafana → F12 → Network → query_range → Headers → valor após grafana_session=
-
-    Opção B — Service Account Token (permanente):
-        export GRAFANA_TOKEN="glsa_..."
+    3. Instale dependências:   pip install requests python-dotenv
+    4. Configure o .env:       cp .env.example .env  →  preencha os valores
 
 USO:
     python debug_agent.py <BVID>
     python debug_agent.py <BVID> --env prod
     python debug_agent.py <BVID> --hours 48
-    python debug_agent.py <BVID> --save
     python debug_agent.py <BVID> --model mistral
+    python debug_agent.py <BVID> --save
     python debug_agent.py <BVID> --no-vpn-check
 """
 
@@ -32,8 +25,14 @@ import time
 import argparse
 import re
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import requests
+from dotenv import load_dotenv
+
+# Carrega o .env do mesmo diretório do script (ou do diretório de execução)
+_env_path = Path(__file__).parent / ".env"
+load_dotenv(_env_path)
 
 
 # ============================================================
@@ -68,8 +67,8 @@ GRAFANA_SESSION = os.environ.get("GRAFANA_SESSION")
 # CONFIG DO OLLAMA
 # ============================================================
 
-OLLAMA_URL          = "http://localhost:11434"
-DEFAULT_OLLAMA_MODEL = "llama3.1"   # troque por "mistral", "qwen2.5", etc.
+OLLAMA_URL           = "http://localhost:11434"
+DEFAULT_OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL") or "llama3.1"
 
 # ============================================================
 # DEFAULTS

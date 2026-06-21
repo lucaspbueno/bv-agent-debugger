@@ -1,0 +1,15 @@
+# Variáveis de ambiente — NUNCA commitar
+.env
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Outputs gerados pelo script
+*.log
+debug_*.md
+
+# IDEs
+.vscode/
+.idea/
